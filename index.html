@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr" class="h-full">
 
 <head>
@@ -12,6 +12,10 @@
     <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
     <!-- SortableJS (Drag and Drop) -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- Google API Scripts -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
     <style>
         /* Ajout d'une police plus moderne */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -185,17 +189,30 @@
                 </button>
                 <div class="h-8 w-px bg-gray-300 mx-2"></div>
                 <button id="export-md-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-5 rounded-lg shadow transition-colors">
-                    Générer le Markdown
+                    Générer Markdown
                 </button>
                 <button id="export-pdf-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-5 rounded-lg shadow transition-colors">
-                    Générer un PDF
+                    Générer PDF
                 </button>
+                <div class="h-8 w-px bg-gray-300 mx-2"></div>
+                <!-- Boutons classiques -->
                 <button id="export-json-btn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-5 rounded-lg shadow transition-colors">
-                    Exporter (JSON)
+                    JSON Local (Export)
                 </button>
                 <button id="import-json-btn" class="bg-yellow-500 hover:bg-yellow-600 text-gray-800 font-medium py-2 px-5 rounded-lg shadow transition-colors">
-                    Importer (JSON)
+                    JSON Local (Import)
                 </button>
+                <!-- Boutons Drive -->
+                <div class="h-8 w-px bg-gray-300 mx-2"></div>
+                <button id="save-drive-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.01 1.485c2.082 0 3.754.025 4.57.52C18.977 3.45 20.306 6.36 20.3 7.64c.005.518-.096.727-.29 1.07l-6.42 11.23c-1.22 2.13-2.61 2.37-3.99 2.37-1.42 0-3.09-.43-4.25-2.45L2.26 14.4c-.6-.99-.59-2.22.02-3.23l2.67-4.66c.64-1.12 1.57-2.3 2.87-3.22.97-.68 2.65-1.78 4.19-1.805zM12 4.5c-1.51 0-2.82.78-3.79 1.9L6.5 9.17l4.7 8.16c.38.65.98 1.17 1.8 1.17.82 0 1.42-.52 1.8-1.17l3.89-6.73c.47-.81.25-1.74-.35-2.34l-3.3-3.3c-.6-.6-1.54-.84-2.39-.45L12 4.5z"/></svg>
+                    Sauver Drive
+                </button>
+                <button id="load-drive-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-5 rounded-lg shadow transition-colors flex items-center gap-2">
+                    Charger Drive
+                </button>
+                
+                <div class="h-8 w-px bg-gray-300 mx-2"></div>
                 <button id="analyze-gemini-btn" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow transition-all flex items-center space-x-2">
                     <span class="gemini-btn-text">✨ Analyser</span>
                     <span class="gemini-spinner hidden"></span>
@@ -213,21 +230,43 @@
     <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden no-print">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-md flex flex-col">
             <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-xl font-semibold">Configuration API</h3>
+                <h3 class="text-xl font-semibold">Configuration</h3>
                 <button id="close-settings-btn" class="text-gray-400 hover:text-gray-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            <div class="p-6">
-                <p class="text-sm text-gray-600 mb-4">Entrez votre clé API Gemini pour activer les fonctions IA (Suggérer, Reformuler, Analyser).</p>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Clé API Gemini</label>
-                <input type="password" id="api-key-input" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="AIzaSy...">
-                <p class="text-xs text-gray-500 mt-2">La clé est stockée uniquement dans votre navigateur.</p>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Clé API Gemini</label>
+                    <input type="password" id="api-key-input" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="AIzaSy...">
+                    <p class="text-xs text-gray-500 mt-1">Pour les fonctions IA (Suggérer, Reformuler, Analyser).</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Google Client ID</label>
+                    <input type="text" id="client-id-input" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="123...apps.googleusercontent.com">
+                    <p class="text-xs text-gray-500 mt-1">Pour la sauvegarde Drive. Récupérez-le dans la Google Cloud Console.</p>
+                </div>
+                <p class="text-xs text-gray-500 italic">Ces informations sont stockées localement dans votre navigateur.</p>
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-lg flex justify-end">
-                <button id="save-api-key-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                <button id="save-settings-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                     Enregistrer
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Liste des fichiers Drive -->
+    <div id="drive-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden no-print">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-semibold">Fichiers sur Drive</h3>
+                <button id="close-drive-modal-btn" class="text-gray-400 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="drive-file-list" class="p-4 overflow-y-auto flex-grow bg-gray-50">
+                <p class="text-center text-gray-500">Chargement...</p>
             </div>
         </div>
     </div>
@@ -244,27 +283,19 @@
                 </button>
             </div>
             <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50">
-                <!-- Original -->
                 <div class="flex flex-col">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Texte Original</label>
                     <div id="original-text-display" class="w-full h-64 p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600 overflow-y-auto text-sm whitespace-pre-wrap"></div>
                 </div>
-                <!-- Suggestion -->
                 <div class="flex flex-col">
                     <label class="block text-sm font-bold text-purple-700 mb-2">Suggestion IA (Éditable)</label>
-                    <!-- MODIFICATION: Textarea sans readonly pour l'édition -->
                     <textarea id="suggested-text-display" class="w-full p-3 border border-purple-300 rounded-md bg-white text-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
                     <p class="text-xs text-gray-500 mt-1">Vous pouvez modifier le texte avant de l'appliquer.</p>
                 </div>
             </div>
             <div class="p-4 border-t bg-white rounded-b-lg flex justify-end space-x-3">
-                <button id="cancel-reformulation-btn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                    Conserver l'original
-                </button>
-                <button id="apply-reformulation-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-md transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                    Tout remplacer
-                </button>
+                <button id="cancel-reformulation-btn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">Conserver l'original</button>
+                <button id="apply-reformulation-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-md transition-colors flex items-center gap-2">Tout remplacer</button>
             </div>
         </div>
     </div>
@@ -282,9 +313,7 @@
                 <pre id="markdown-output" class="bg-gray-50 p-4 rounded-md text-sm whitespace-pre-wrap word-wrap break-words"></pre>
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-lg">
-                <button id="copy-md-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                    Copier dans le presse-papiers
-                </button>
+                <button id="copy-md-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">Copier dans le presse-papiers</button>
             </div>
         </div>
     </div>
@@ -306,9 +335,7 @@
                 <pre id="analysis-output" class="bg-gray-50 p-4 rounded-md text-sm whitespace-pre-wrap word-wrap break-words hidden"></pre>
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-lg">
-                <button id="copy-analysis-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors" disabled>
-                    Copier l'analyse
-                </button>
+                <button id="copy-analysis-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors" disabled>Copier l'analyse</button>
             </div>
         </div>
     </div>
@@ -319,7 +346,27 @@
             const addPillarBtn = document.getElementById('add-pillar-btn');
             const mainTitleInput = document.getElementById('main-title');
             
-            // Modales
+            // Modales & Elements
+            const settingsModal = document.getElementById('settings-modal');
+            const apiKeyInput = document.getElementById('api-key-input');
+            const clientIdInput = document.getElementById('client-id-input');
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            const closeSettingsBtn = document.getElementById('close-settings-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+
+            const driveModal = document.getElementById('drive-modal');
+            const closeDriveModalBtn = document.getElementById('close-drive-modal-btn');
+            const driveFileList = document.getElementById('drive-file-list');
+            
+            const reformulationModal = document.getElementById('reformulation-modal');
+            const closeReformulationBtn = document.getElementById('close-reformulation-btn');
+            const originalTextDisplay = document.getElementById('original-text-display');
+            const suggestedTextDisplay = document.getElementById('suggested-text-display');
+            const applyReformulationBtn = document.getElementById('apply-reformulation-btn');
+            const cancelReformulationBtn = document.getElementById('cancel-reformulation-btn');
+            let currentEditorInstance = null;
+            let reformulationMDE = null;
+
             const modal = document.getElementById('markdown-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             const markdownOutput = document.getElementById('markdown-output');
@@ -329,23 +376,7 @@
             const analysisOutput = document.getElementById('analysis-output');
             const analysisLoading = document.getElementById('analysis-loading');
             const copyAnalysisBtn = document.getElementById('copy-analysis-btn');
-
-            const settingsModal = document.getElementById('settings-modal');
-            const apiKeyInput = document.getElementById('api-key-input');
-            const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-            const closeSettingsBtn = document.getElementById('close-settings-btn');
-            const settingsBtn = document.getElementById('settings-btn');
-
-            // AJOUT: Éléments de la modale de reformulation
-            const reformulationModal = document.getElementById('reformulation-modal');
-            const closeReformulationBtn = document.getElementById('close-reformulation-btn');
-            const originalTextDisplay = document.getElementById('original-text-display');
-            const suggestedTextDisplay = document.getElementById('suggested-text-display');
-            const applyReformulationBtn = document.getElementById('apply-reformulation-btn');
-            const cancelReformulationBtn = document.getElementById('cancel-reformulation-btn');
-            let currentEditorInstance = null;
-            // AJOUT: Variable pour l'instance EasyMDE de la modale
-            let reformulationMDE = null;
+            const analyzeGeminiBtn = document.getElementById('analyze-gemini-btn');
 
             // Buttons
             const exportMdBtn = document.getElementById('export-md-btn');
@@ -353,12 +384,16 @@
             const exportJsonBtn = document.getElementById('export-json-btn');
             const importJsonBtn = document.getElementById('import-json-btn');
             const jsonFileInput = document.getElementById('json-file-input');
-            const analyzeGeminiBtn = document.getElementById('analyze-gemini-btn');
+            const saveDriveBtn = document.getElementById('save-drive-btn');
+            const loadDriveBtn = document.getElementById('load-drive-btn');
 
             let mdeInstances = new Map();
             let currentColorIndex = 0;
+            let tokenClient;
+            let gapiInited = false;
+            let gisInited = false;
 
-            // Constante définie vide, chargée par l'environnement ou via le modal Settings
+            // Constante définie vide
             const apiKey = ""; 
 
             const colorSets = [
@@ -381,7 +416,6 @@
                 return `${String(now.getDate()).padStart(2,'0')}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getFullYear()).slice(-2)}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
             }
 
-            // --- Notification System ---
             function showToast(message, type = 'info') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
@@ -394,26 +428,158 @@
                 }, 3000);
             }
 
-            // --- Settings Logic ---
+            // --- Settings & Auth ---
             settingsBtn.addEventListener('click', () => {
                 apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+                clientIdInput.value = localStorage.getItem('google_client_id') || '';
                 settingsModal.classList.remove('hidden');
             });
             closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
-            saveApiKeyBtn.addEventListener('click', () => {
+            saveSettingsBtn.addEventListener('click', () => {
                 const key = apiKeyInput.value.trim();
-                if (key) {
-                    localStorage.setItem('gemini_api_key', key);
-                    showToast('Clé API enregistrée !', 'success');
-                } else {
-                    localStorage.removeItem('gemini_api_key');
-                    showToast('Clé API supprimée.', 'info');
-                }
+                const cid = clientIdInput.value.trim();
+                if (key) localStorage.setItem('gemini_api_key', key);
+                else localStorage.removeItem('gemini_api_key');
+                
+                if (cid) {
+                    localStorage.setItem('google_client_id', cid);
+                    // Re-init Token Client if ID changed
+                    if (gisInited) initializeGis();
+                } else localStorage.removeItem('google_client_id');
+
+                showToast('Configuration enregistrée !', 'success');
                 settingsModal.classList.add('hidden');
             });
 
+            // --- Google Drive Integration ---
+            function gapiLoaded() {
+                gapi.load('client', initializeGapiClient);
+            }
+            async function initializeGapiClient() {
+                // On utilise gapi juste pour le chargement des scripts pour l'instant, l'auth est gérée par GIS
+                // discoveryDocs n'est pas strictement nécessaire si on fait des appels REST directs, mais utile.
+                gapiInited = true;
+            }
+            function gisLoaded() {
+                gisInited = true;
+                initializeGis();
+            }
+            function initializeGis() {
+                const clientId = localStorage.getItem('google_client_id');
+                if (!clientId) return;
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file', // Scope limité aux fichiers créés par l'app
+                    callback: '', // Defini dynamiquement
+                });
+            }
+            // Auto-load scripts
+            const script1 = document.createElement('script'); script1.src = "https://apis.google.com/js/api.js"; script1.onload = gapiLoaded; document.body.appendChild(script1);
+            const script2 = document.createElement('script'); script2.src = "https://accounts.google.com/gsi/client"; script2.onload = gisLoaded; document.body.appendChild(script2);
 
-            // --- API Calls ---
+            async function handleAuth(callback) {
+                const clientId = localStorage.getItem('google_client_id');
+                if (!clientId) { showToast("Veuillez configurer votre Google Client ID (⚙️)", "error"); return; }
+                if (!tokenClient) initializeGis();
+                
+                tokenClient.callback = async (resp) => {
+                    if (resp.error) { showToast("Erreur d'authentification", "error"); throw resp; }
+                    await callback(resp.access_token);
+                };
+                // Skip prompt if we have a valid token (simplified) - GIS handles explicit flow well
+                if (gapi.client && gapi.client.getToken() === null) {
+                    tokenClient.requestAccessToken({prompt: 'consent'});
+                } else {
+                    tokenClient.requestAccessToken({prompt: ''});
+                }
+            }
+
+            saveDriveBtn.addEventListener('click', () => {
+                handleAuth(async (token) => {
+                    showToast("Sauvegarde vers Drive en cours...");
+                    const data = getDataAsObject();
+                    const fileName = `${(mainTitleInput.value || 'config').replace(/\s+/g, '-').toLowerCase()}_${getTimestamp()}.json`;
+                    const fileContent = JSON.stringify(data, null, 2);
+                    
+                    const metadata = {
+                        name: fileName,
+                        mimeType: 'application/json',
+                    };
+                    
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', new Blob([fileContent], { type: 'application/json' }));
+
+                    try {
+                        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                            method: 'POST',
+                            headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+                            body: form
+                        });
+                        const resData = await response.json();
+                        if (resData.id) showToast(`Sauvegardé ! (ID: ${resData.id})`, "success");
+                        else throw new Error("Réponse Drive invalide");
+                    } catch (e) {
+                        console.error(e);
+                        showToast("Erreur lors de la sauvegarde Drive", "error");
+                    }
+                });
+            });
+
+            loadDriveBtn.addEventListener('click', () => {
+                handleAuth(async (token) => {
+                    driveModal.classList.remove('hidden');
+                    driveFileList.innerHTML = '<p class="text-center text-gray-500">Recherche de fichiers...</p>';
+                    
+                    try {
+                        // Chercher seulement les JSON créés par l'app (ou accessibles)
+                        const q = "mimeType = 'application/json' and trashed = false";
+                        const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)`, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        const data = await response.json();
+                        
+                        if (data.files && data.files.length > 0) {
+                            driveFileList.innerHTML = '';
+                            const ul = document.createElement('ul');
+                            ul.className = "space-y-2";
+                            data.files.forEach(file => {
+                                const li = document.createElement('li');
+                                li.className = "flex justify-between items-center p-3 bg-white border rounded hover:bg-gray-50 cursor-pointer";
+                                li.innerHTML = `<div><div class="font-medium text-gray-800">${file.name}</div><div class="text-xs text-gray-500">${new Date(file.modifiedTime).toLocaleString()}</div></div>`;
+                                li.onclick = () => loadFileFromDrive(file.id, token);
+                                ul.appendChild(li);
+                            });
+                            driveFileList.appendChild(ul);
+                        } else {
+                            driveFileList.innerHTML = '<p class="text-center text-gray-500">Aucun fichier JSON trouvé.</p>';
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        driveFileList.innerHTML = '<p class="text-center text-red-500">Erreur lors du chargement.</p>';
+                    }
+                });
+            });
+
+            closeDriveModalBtn.addEventListener('click', () => driveModal.classList.add('hidden'));
+
+            async function loadFileFromDrive(fileId, token) {
+                driveModal.classList.add('hidden');
+                showToast("Chargement du fichier...");
+                try {
+                    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const data = await response.json();
+                    rebuildUi(data);
+                    showToast("Fichier chargé avec succès !", "success");
+                } catch (e) {
+                    showToast("Erreur lors de la lecture du fichier", "error");
+                }
+            }
+
+
+            // --- Existing Logic (RetryFetch, CallGemini...) ---
             async function retryFetch(url, options, retries = 3, delay = 1000) {
                 try {
                     const response = await fetch(url, options);
@@ -435,93 +601,61 @@
             }
 
             async function callGemini(systemPrompt, userPrompt, jsonSchema = null) {
-                // Récupérer la clé: soit celle de l'environnement, soit celle du localStorage
-                let effectiveKey = apiKey;
-                if (!effectiveKey) {
-                    effectiveKey = localStorage.getItem('gemini_api_key');
-                }
-                
-                if (!effectiveKey) {
-                    showToast("Veuillez configurer votre clé API Gemini (⚙️).", "error");
-                    return null;
-                }
-
-                const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${effectiveKey}`;
-
+                let effectiveKey = localStorage.getItem('gemini_api_key');
+                if (!effectiveKey) { showToast("Veuillez configurer votre clé API Gemini (⚙️).", "error"); return null; }
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${effectiveKey}`;
                 const payload = {
                     contents: [{ parts: [{ text: userPrompt }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: {}
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
                 };
-
-                if (jsonSchema) {
-                    payload.generationConfig = { responseMimeType: "application/json", responseSchema: jsonSchema };
-                }
+                if (jsonSchema) payload.generationConfig = { responseMimeType: "application/json", responseSchema: jsonSchema };
 
                 try {
-                    const result = await retryFetch(geminiApiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const candidate = result.candidates?.[0];
-                    if (candidate && candidate.content?.parts?.[0]?.text) {
-                        return candidate.content.parts[0].text;
-                    } else {
-                        throw new Error("Réponse invalide de l'IA.");
-                    }
+                    const result = await retryFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    return result.candidates?.[0]?.content?.parts?.[0]?.text || null;
                 } catch (error) {
-                    console.error(error);
-                    showToast(`Erreur IA: ${error.message}`, 'error');
-                    return null;
+                    console.error(error); showToast(`Erreur IA: ${error.message}`, 'error'); return null;
                 }
             }
 
             // --- Creation Functions ---
-
             function createSubsection(title = 'Nouvelle Sous-section', content = '', colorSet, isClosed = false) {
                 const subDiv = document.createElement('div');
                 subDiv.className = 'subsection-card p-4 rounded-lg shadow-sm transition-all duration-300 ease-in-out';
                 subDiv.style.backgroundColor = colorSet.easymdeBg;
-                
                 const uniqueId = `mde-${crypto.randomUUID()}`;
                 
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'flex justify-between items-center mb-2';
-                headerDiv.innerHTML = `
-                    <div class="flex items-center space-x-1 w-full">
-                        <button class="drag-handle-sub no-print text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors" tabindex="-1">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M4 6H20M4 12H20M4 18H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                        </button>
-                        <div class="flex items-center space-x-1 w-full cursor-pointer toggle-subsection-btn">
-                            <button class="toggle-btn no-print text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors" tabindex="-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 toggle-icon ${isClosed ? 'is-closed' : ''}" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                subDiv.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center space-x-1 w-full">
+                            <button class="drag-handle-sub no-print text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors" tabindex="-1">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M4 6H20M4 12H20M4 18H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </button>
-                            <input type="text" class="subsection-title text-lg font-medium text-gray-800 bg-transparent border-b border-transparent ${colorSet.ring} focus:border-gray-400 focus:ring-0 focus:outline-none w-full p-1" value="${title}" placeholder="Titre (Titre niv. 3)">
+                            <div class="flex items-center space-x-1 w-full cursor-pointer toggle-subsection-btn">
+                                <button class="toggle-btn no-print text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors" tabindex="-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 toggle-icon ${isClosed ? 'is-closed' : ''}" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <input type="text" class="subsection-title text-lg font-medium text-gray-800 bg-transparent border-b border-transparent ${colorSet.ring} focus:border-gray-400 focus:ring-0 focus:outline-none w-full p-1" value="${title}" placeholder="Titre (Titre niv. 3)">
+                            </div>
                         </div>
+                        <button class="delete-subsection-btn no-print text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full ml-2 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                        </button>
                     </div>
-                    <button class="delete-subsection-btn no-print text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full ml-2 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
-                    </button>
+                    <div class="subsection-content-wrapper collapsible-content ${isClosed ? 'is-closed' : ''}">
+                        <textarea id="${uniqueId}"></textarea>
+                        <div class="print-content" style="--print-bg-color: ${colorSet.easymdeBg}"></div>
+                    </div>
                 `;
-                subDiv.appendChild(headerDiv);
                 
-                const editorDiv = document.createElement('div');
-                editorDiv.className = `subsection-content-wrapper collapsible-content ${isClosed ? 'is-closed' : ''}`; 
+                // Hack pour attacher l'éditeur car innerHTML recrée les éléments
+                const editorDiv = subDiv.querySelector('.subsection-content-wrapper');
                 
-                const textarea = document.createElement('textarea');
-                textarea.id = uniqueId;
-                editorDiv.appendChild(textarea);
-                
-                const printDiv = document.createElement('div');
-                printDiv.className = 'print-content';
-                printDiv.style.setProperty('--print-bg-color', colorSet.easymdeBg);
-                editorDiv.appendChild(printDiv);
-                subDiv.appendChild(editorDiv);
-
                 setTimeout(() => {
+                    const ta = document.getElementById(uniqueId);
+                    if(!ta) return;
                     const easyMDE = new EasyMDE({
-                        element: textarea,
+                        element: ta,
                         initialValue: content,
                         toolbar: [
                             'bold', 'italic', 'unordered-list', 'ordered-list', 'quote', 'code', '|',
@@ -537,16 +671,17 @@
                         status: false, spellChecker: false, minHeight: '100px',
                         renderingConfig: { codeSyntaxHighlighting: false }
                     });
-                    // Appliquer styles
+                    
                     const cmElement = easyMDE.codemirror.getWrapperElement();
                     const toolbarElement = cmElement.previousSibling;
                     cmElement.style.setProperty('--easymde-bg', colorSet.easymdeBg);
-                    if(toolbarElement && toolbarElement.classList.contains('editor-toolbar')) {
-                        toolbarElement.style.setProperty('--easymde-bg', colorSet.easymdeBg);
-                    }
+                    if(toolbarElement) toolbarElement.style.setProperty('--easymde-bg', colorSet.easymdeBg);
+                    
                     mdeInstances.set(uniqueId, easyMDE);
-                    easyMDE.codemirror.on("change", () => { printDiv.textContent = easyMDE.value(); });
-                    printDiv.textContent = easyMDE.value();
+                    easyMDE.codemirror.on("change", () => {
+                        subDiv.querySelector('.print-content').textContent = easyMDE.value();
+                    });
+                    subDiv.querySelector('.print-content').textContent = easyMDE.value();
                 }, 10);
                 return subDiv;
             }
@@ -558,80 +693,66 @@
                 const pillarTitle = pillarCard.querySelector('.pillar-title').value;
                 const mainTitle = mainTitleInput.value;
 
+                // Spinner Logic
                 const cmWrapper = editor.codemirror.getWrapperElement();
                 const originalOpacity = cmWrapper.style.opacity;
-                cmWrapper.style.opacity = '0.5';
-                cmWrapper.style.pointerEvents = 'none';
-                
-                let spinnerOverlay = document.createElement('div');
-                spinnerOverlay.className = 'absolute inset-0 flex items-center justify-center z-10';
-                spinnerOverlay.innerHTML = '<div class="gemini-spinner text-purple-600" style="width: 2rem; height: 2rem; border-width: 3px;"></div>';
+                cmWrapper.style.opacity = '0.5'; cmWrapper.style.pointerEvents = 'none';
+                let spinner = document.createElement('div');
+                spinner.className = 'absolute inset-0 flex items-center justify-center z-10';
+                spinner.innerHTML = '<div class="gemini-spinner text-purple-600" style="width:2rem;height:2rem;border-width:3px;"></div>';
                 cmWrapper.parentElement.style.position = 'relative';
-                cmWrapper.parentElement.appendChild(spinnerOverlay);
+                cmWrapper.parentElement.appendChild(spinner);
 
-                let systemPrompt, userPrompt;
+                let sys = "Tu es un expert en rédaction de prompts pour LLM.";
+                let prompt = `Contexte:\nTitre: "${mainTitle}"\nPilier: "${pillarTitle}"\nSection: "${subtitle}"\n\n`;
+                
                 if (!currentText || currentText.trim() === "") {
-                    systemPrompt = "Tu es un assistant expert en rédaction d'instructions pour LLM (Gemini). Rédige un contenu pertinent, clair et concis pour une section de 'Custom Gem'.";
-                    userPrompt = `Contexte:\nTitre du Gem: "${mainTitle}"\nPilier: "${pillarTitle}"\nSection à rédiger: "${subtitle}"\n\nInstruction: Rédige un premier jet pertinent. Donne uniquement le contenu, sans guillemets.`;
+                    sys += " Rédige un contenu pertinent et concis.";
+                    prompt += "Instruction: Rédige un premier jet. Donne uniquement le contenu.";
                 } else {
-                    systemPrompt = "Tu es un expert en rédaction de prompts pour LLM. Réécris le texte pour qu'il soit plus clair, concis et structuré.";
-                    userPrompt = `Contexte:\nTitre du Gem: "${mainTitle}"\nPilier: "${pillarTitle}"\nSection: "${subtitle}"\n\nTexte à reformuler:\n"${currentText}"\n\nDonne uniquement le texte reformulé.`;
+                    sys += " Réécris le texte pour qu'il soit plus clair et structuré.";
+                    prompt += `Texte à reformuler:\n"${currentText}"\n\nDonne uniquement le texte reformulé.`;
                 }
 
                 try {
-                    const finalText = await callGemini(systemPrompt, userPrompt);
+                    const finalText = await callGemini(sys, prompt);
                     if (finalText) {
-                        // MODIFICATION: Au lieu de remplacer directement, on ouvre la modale
                         currentEditorInstance = editor;
-                        originalTextDisplay.textContent = currentText || "(Champ vide)";
-                        
-                        // MODIFICATION: Initialisation ou mise à jour de l'éditeur EasyMDE dans la modale
+                        originalTextDisplay.textContent = currentText || "(Vide)";
                         reformulationModal.classList.remove('hidden');
-                        
                         if (!reformulationMDE) {
                             reformulationMDE = new EasyMDE({
                                 element: document.getElementById('suggested-text-display'),
                                 initialValue: finalText,
                                 toolbar: ['bold', 'italic', 'unordered-list', 'ordered-list', 'quote', 'code'],
-                                status: false,
-                                spellChecker: false,
-                                minHeight: '250px',
+                                status: false, spellChecker: false, minHeight: '250px',
                                 renderingConfig: { codeSyntaxHighlighting: false }
                             });
                         } else {
                             reformulationMDE.value(finalText);
-                            // Petit délai pour s'assurer que le refresh se fait après l'affichage de la modale
-                            setTimeout(() => {
-                                reformulationMDE.codemirror.refresh();
-                            }, 50);
+                            setTimeout(() => reformulationMDE.codemirror.refresh(), 50);
                         }
                     }
                 } finally {
                     cmWrapper.style.opacity = originalOpacity || '1';
                     cmWrapper.style.pointerEvents = 'auto';
-                    if (spinnerOverlay) spinnerOverlay.remove();
+                    spinner.remove();
                 }
             }
 
-            // AJOUT: Gestion des événements de la modale de reformulation
-            closeReformulationBtn.addEventListener('click', () => {
-                reformulationModal.classList.add('hidden');
-                currentEditorInstance = null;
-            });
-            cancelReformulationBtn.addEventListener('click', () => {
-                reformulationModal.classList.add('hidden');
-                currentEditorInstance = null;
-            });
+            // Reformulation Modal Events
+            const closeRef = () => { reformulationModal.classList.add('hidden'); currentEditorInstance = null; };
+            closeReformulationBtn.addEventListener('click', closeRef);
+            cancelReformulationBtn.addEventListener('click', closeRef);
             applyReformulationBtn.addEventListener('click', () => {
                 if (currentEditorInstance && reformulationMDE) {
-                    // MODIFICATION: On récupère la valeur depuis l'éditeur EasyMDE
                     currentEditorInstance.value(reformulationMDE.value());
+                    showToast('Appliqué !', 'success');
                 }
-                reformulationModal.classList.add('hidden');
-                currentEditorInstance = null;
-                showToast('Reformulation appliquée', 'success');
+                closeRef();
             });
 
+            // --- Structure Logic (Pillars) ---
             function createPillar(title = 'Nouveau Pilier', colorSet, subsections = [], isClosed = false) {
                 const pillarDiv = document.createElement('div');
                 pillarDiv.className = 'pillar-card p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out';
@@ -640,139 +761,95 @@
                 pillarDiv.style.setProperty('--print-color', colorSet.printText);
                 pillarDiv.dataset.colorSet = JSON.stringify(colorSet);
 
-                const header = document.createElement('div');
-                header.className = 'flex flex-col sm:flex-row justify-between sm:items-center mb-4';
-                header.innerHTML = `
-                    <div class="flex items-center space-x-1 flex-grow w-full">
-                         <button class="drag-handle-pillar no-print text-current hover:opacity-70 p-1 rounded-full transition-opacity" tabindex="-1">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M4 6H20M4 12H20M4 18H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                        </button>
-                        <div class="flex items-center space-x-1 flex-grow w-full cursor-pointer toggle-pillar-btn">
-                            <button class="toggle-btn no-print text-current hover:opacity-70 p-1 rounded-full transition-opacity" tabindex="-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 toggle-icon ${isClosed ? 'is-closed' : ''}" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                pillarDiv.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4">
+                        <div class="flex items-center space-x-1 flex-grow w-full">
+                             <button class="drag-handle-pillar no-print text-current hover:opacity-70 p-1 rounded-full transition-opacity" tabindex="-1">
+                                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M4 6H20M4 12H20M4 18H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </button>
-                            <input type="text" class="pillar-title text-2xl font-semibold bg-transparent border-b-2 border-transparent ${colorSet.ring} focus:border-current focus:ring-0 focus:outline-none p-1 -ml-1 rounded-md w-full" value="${title}" placeholder="Titre (Titre niv. 2)">
+                            <div class="flex items-center space-x-1 flex-grow w-full cursor-pointer toggle-pillar-btn">
+                                <button class="toggle-btn no-print text-current hover:opacity-70 p-1 rounded-full transition-opacity" tabindex="-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 toggle-icon ${isClosed ? 'is-closed' : ''}" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <input type="text" class="pillar-title text-2xl font-semibold bg-transparent border-b-2 border-transparent ${colorSet.ring} focus:border-current focus:ring-0 focus:outline-none p-1 -ml-1 rounded-md w-full" value="${title}" placeholder="Titre (Titre niv. 2)">
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 mt-3 sm:mt-0 no-print flex-shrink-0 ml-4">
+                            <button class="suggest-sections-btn py-1 px-3 bg-white bg-opacity-80 hover:bg-opacity-100 text-sm font-medium rounded-md shadow-sm transition-all flex items-center space-x-1.5">
+                                <span class="gemini-btn-text">✨ Suggérer</span><span class="gemini-spinner hidden"></span>
+                            </button>
+                            <button class="add-subsection-btn py-1 px-3 bg-white bg-opacity-80 hover:bg-opacity-100 text-sm font-medium rounded-md shadow-sm transition-all">Ajouter Section (Titre niv. 3)</button>
+                            <button class="delete-pillar-btn py-1 px-3 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-md shadow-sm transition-all">Supprimer</button>
                         </div>
                     </div>
-                    <div class="flex space-x-2 mt-3 sm:mt-0 no-print flex-shrink-0 ml-4">
-                        <button class="suggest-sections-btn py-1 px-3 bg-white bg-opacity-80 hover:bg-opacity-100 text-sm font-medium rounded-md shadow-sm transition-all flex items-center space-x-1.5">
-                            <span class="gemini-btn-text">✨ Suggérer</span><span class="gemini-spinner hidden"></span>
-                        </button>
-                        <button class="add-subsection-btn py-1 px-3 bg-white bg-opacity-80 hover:bg-opacity-100 text-sm font-medium rounded-md shadow-sm transition-all">Ajouter Section (Titre niv. 3)</button>
-                        <button class="delete-pillar-btn py-1 px-3 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-md shadow-sm transition-all">Supprimer</button>
-                    </div>
+                    <div class="subsections-container space-y-4 ml-0 md:ml-4 collapsible-content ${isClosed ? 'is-closed' : ''}"></div>
                 `;
                 
-                const subsectionsContainer = document.createElement('div');
-                subsectionsContainer.className = `subsections-container space-y-4 ml-0 md:ml-4 collapsible-content ${isClosed ? 'is-closed' : ''}`;
-                subsections.forEach(sub => subsectionsContainer.appendChild(createSubsection(sub.title, sub.content, colorSet, sub.isClosed || false)));
-                pillarDiv.appendChild(header);
-                pillarDiv.appendChild(subsectionsContainer);
-                new Sortable(subsectionsContainer, { animation: 150, handle: '.drag-handle-sub', ghostClass: 'sortable-ghost' });
+                const subContainer = pillarDiv.querySelector('.subsections-container');
+                subsections.forEach(sub => subContainer.appendChild(createSubsection(sub.title, sub.content, colorSet, sub.isClosed || false)));
+                new Sortable(subContainer, { animation: 150, handle: '.drag-handle-sub', ghostClass: 'sortable-ghost' });
                 return pillarDiv;
             }
 
-            async function handleSuggestSections(btn) {
-                const pillarCard = btn.closest('.pillar-card');
-                const pillarTitle = pillarCard.querySelector('.pillar-title').value;
-                const mainTitle = mainTitleInput.value;
-                const btnText = btn.querySelector('.gemini-btn-text');
-                const spinner = btn.querySelector('.gemini-spinner');
-
-                btn.disabled = true; btnText.textContent = "Génération..."; spinner.classList.remove('hidden');
-                try {
-                    const jsonResponse = await callGemini(
-                        "Tu es un assistant de conception de prompts. Suggère des sous-sections pertinentes.",
-                        `Titre: "${mainTitle}"\nPilier: "${pillarTitle}"\nSuggère 3 à 5 titres de sous-sections.`,
-                        { type: "OBJECT", properties: { "suggestions": { "type": "ARRAY", "items": { "type": "STRING" } } }, required: ["suggestions"] }
-                    );
-                    if (!jsonResponse) return;
-                    const data = JSON.parse(jsonResponse);
-                    if (data.suggestions) {
-                        const subContainer = pillarCard.querySelector('.subsections-container');
-                        const colorSet = JSON.parse(pillarCard.dataset.colorSet);
-                        data.suggestions.forEach(title => subContainer.appendChild(createSubsection(title, '', colorSet, true)));
-                        const content = pillarCard.querySelector('.subsections-container');
-                        const icon = pillarCard.querySelector('.toggle-pillar-btn .toggle-icon');
-                        content.classList.remove('is-closed'); icon.classList.remove('is-closed');
-                    }
-                } catch(e) { console.error(e); showToast("Erreur parsing JSON", "error"); } 
-                finally { btn.disabled = false; btnText.textContent = "✨ Suggérer"; spinner.classList.add('hidden'); }
-            }
-
-            // --- Event Handlers ---
-            function handleContainerClick(e) {
+            // Click Handlers (Delegated)
+            pillarsContainer.addEventListener('click', (e) => {
                 if (e.target.closest('.drag-handle-pillar') || e.target.closest('.drag-handle-sub')) { e.stopPropagation(); return; }
                 
-                const togglePillarBtn = e.target.closest('.toggle-pillar-btn');
-                if (togglePillarBtn && !e.target.matches('.pillar-title')) {
-                     const content = togglePillarBtn.closest('.pillar-card').querySelector('.subsections-container');
-                     content.classList.toggle('is-closed');
-                     togglePillarBtn.querySelector('.toggle-icon').classList.toggle('is-closed');
-                     return;
+                // Toggle Pillar
+                const toggleP = e.target.closest('.toggle-pillar-btn');
+                if (toggleP && !e.target.matches('.pillar-title')) {
+                    toggleP.closest('.pillar-card').querySelector('.subsections-container').classList.toggle('is-closed');
+                    toggleP.querySelector('.toggle-icon').classList.toggle('is-closed');
+                    return;
                 }
-                const toggleSubBtn = e.target.closest('.toggle-subsection-btn');
-                if (toggleSubBtn && !e.target.matches('.subsection-title')) {
-                     const content = toggleSubBtn.closest('.subsection-card').querySelector('.subsection-content-wrapper');
-                     content.classList.toggle('is-closed');
-                     toggleSubBtn.querySelector('.toggle-icon').classList.toggle('is-closed');
-                     return;
+                // Toggle Sub
+                const toggleS = e.target.closest('.toggle-subsection-btn');
+                if (toggleS && !e.target.matches('.subsection-title')) {
+                    toggleS.closest('.subsection-card').querySelector('.subsection-content-wrapper').classList.toggle('is-closed');
+                    toggleS.querySelector('.toggle-icon').classList.toggle('is-closed');
+                    return;
                 }
-                const suggestBtn = e.target.closest('.suggest-sections-btn');
-                if (suggestBtn) { handleSuggestSections(suggestBtn); return; }
-
-                const addSubBtn = e.target.closest('.add-subsection-btn');
-                if (addSubBtn) {
-                    const pillarCard = e.target.closest('.pillar-card');
-                    const newSub = createSubsection('Nouvelle Sous-section', '', JSON.parse(pillarCard.dataset.colorSet), false);
-                    pillarCard.querySelector('.subsections-container').appendChild(newSub);
+                // Suggest
+                const sugBtn = e.target.closest('.suggest-sections-btn');
+                if (sugBtn) { handleSuggestSections(sugBtn); return; }
+                // Add Sub
+                const addSub = e.target.closest('.add-subsection-btn');
+                if (addSub) {
+                    const card = addSub.closest('.pillar-card');
+                    const newSub = createSubsection('Nouvelle Sous-section', '', JSON.parse(card.dataset.colorSet), false);
+                    card.querySelector('.subsections-container').appendChild(newSub);
                     newSub.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => mdeInstances.get(newSub.querySelector('textarea').id)?.codemirror.focus(), 500);
                     return;
                 }
-                const deleteSubBtn = e.target.closest('.delete-subsection-btn');
-                if (deleteSubBtn) {
-                    const card = deleteSubBtn.closest('.subsection-card');
-                    const mde = mdeInstances.get(card.querySelector('textarea').id);
-                    if(mde) { mde.toTextArea(); mdeInstances.delete(card.querySelector('textarea').id); }
+                // Delete Sub
+                const delSub = e.target.closest('.delete-subsection-btn');
+                if (delSub) {
+                    const card = delSub.closest('.subsection-card');
+                    const id = card.querySelector('textarea').id;
+                    if(mdeInstances.has(id)) { mdeInstances.get(id).toTextArea(); mdeInstances.delete(id); }
                     card.remove(); return;
                 }
-                const deletePillarBtn = e.target.closest('.delete-pillar-btn');
-                if (deletePillarBtn) {
-                    const card = deletePillarBtn.closest('.pillar-card');
-                    card.querySelectorAll('textarea').forEach(t => { 
-                        const mde = mdeInstances.get(t.id); 
-                        if(mde) { mde.toTextArea(); mdeInstances.delete(t.id); }
-                    });
+                // Delete Pillar
+                const delPil = e.target.closest('.delete-pillar-btn');
+                if (delPil) {
+                    const card = delPil.closest('.pillar-card');
+                    card.querySelectorAll('textarea').forEach(t => { if(mdeInstances.has(t.id)) { mdeInstances.get(t.id).toTextArea(); mdeInstances.delete(t.id); } });
                     card.remove(); return;
                 }
-            }
+            });
 
-            pillarsContainer.addEventListener('click', handleContainerClick);
             addPillarBtn.addEventListener('click', () => {
-                const newPillar = createPillar('Nouveau Pilier', getNextColorSet(), [{ title: 'Nouvelle Sous-section', content: '', isClosed: false }], false);
+                const newPillar = createPillar('Nouveau Pilier', getNextColorSet(), [{title:'Nouvelle Sous-section', content:'', isClosed:false}], false);
                 pillarsContainer.appendChild(newPillar);
                 newPillar.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
 
-            // --- Export/Import/Analyse ---
-            function generateMarkdown() {
-                let md = `# ${mainTitleInput.value || 'Titre (Titre niv. 1)'}\n\n`;
-                pillarsContainer.querySelectorAll('.pillar-card').forEach(pillar => {
-                    md += `## ${pillar.querySelector('.pillar-title').value}\n\n`;
-                    pillar.querySelectorAll('.subsection-card').forEach(sub => {
-                        md += `### ${sub.querySelector('.subsection-title').value}\n\n`;
-                        const mde = mdeInstances.get(sub.querySelector('textarea').id);
-                        md += `${mde ? mde.value() : sub.querySelector('textarea').value}\n\n`;
-                    });
-                });
-                return md.trim();
-            }
-
+            // --- Data Helpers ---
             function getDataAsObject() {
                 const data = { mainTitle: mainTitleInput.value, pillars: [] };
                 pillarsContainer.querySelectorAll('.pillar-card').forEach(pillar => {
-                    const pData = {
+                    const p = {
                         title: pillar.querySelector('.pillar-title').value,
                         colorSet: JSON.parse(pillar.dataset.colorSet),
                         isClosed: pillar.querySelector('.subsections-container').classList.contains('is-closed'),
@@ -780,13 +857,13 @@
                     };
                     pillar.querySelectorAll('.subsection-card').forEach(sub => {
                         const mde = mdeInstances.get(sub.querySelector('textarea').id);
-                        pData.subsections.push({
+                        p.subsections.push({
                             title: sub.querySelector('.subsection-title').value,
                             content: mde ? mde.value() : sub.querySelector('textarea').value,
                             isClosed: sub.querySelector('.subsection-content-wrapper').classList.contains('is-closed')
                         });
                     });
-                    data.pillars.push(pData);
+                    data.pillars.push(p);
                 });
                 return data;
             }
@@ -796,11 +873,66 @@
                 mainTitleInput.value = data.mainTitle || 'Mon Gem Custom';
                 if (data.pillars) data.pillars.forEach(p => {
                     const color = p.colorSet || getNextColorSet();
-                    const subs = p.subsections || [{ title: 'Nouvelle Sous-section', content: '', isClosed: false }];
+                    const subs = p.subsections || [{title: 'Nouvelle Sous-section', content: '', isClosed: false}];
                     pillarsContainer.appendChild(createPillar(p.title, color, subs, p.isClosed));
                 });
             }
 
+            // --- Other Exports ---
+            exportMdBtn.addEventListener('click', () => {
+                let md = `# ${mainTitleInput.value}\n\n`;
+                pillarsContainer.querySelectorAll('.pillar-card').forEach(p => {
+                    md += `## ${p.querySelector('.pillar-title').value}\n\n`;
+                    p.querySelectorAll('.subsection-card').forEach(s => {
+                        const mde = mdeInstances.get(s.querySelector('textarea').id);
+                        md += `### ${s.querySelector('.subsection-title').value}\n\n${mde ? mde.value() : ''}\n\n`;
+                    });
+                });
+                markdownOutput.textContent = md.trim();
+                modal.classList.remove('hidden');
+            });
+            closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            copyMdBtn.addEventListener('click', () => { navigator.clipboard.writeText(markdownOutput.textContent); showToast('Copié !', 'success'); });
+            exportPdfBtn.addEventListener('click', () => window.print());
+            exportJsonBtn.addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(getDataAsObject(), null, 2)], {type: 'application/json'});
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `${(mainTitleInput.value || 'config').replace(/\s+/g, '-').toLowerCase()}_${getTimestamp()}.json`;
+                a.click();
+            });
+            importJsonBtn.addEventListener('click', () => jsonFileInput.click());
+            jsonFileInput.addEventListener('change', (e) => {
+                const r = new FileReader();
+                r.onload = (ev) => { try { rebuildUi(JSON.parse(ev.target.result)); } catch(e){ showToast("JSON invalide", "error"); }};
+                r.readAsText(e.target.files[0]); e.target.value = null;
+            });
+
+            // --- Global Analysis ---
+            analyzeGeminiBtn.addEventListener('click', async () => {
+                analysisModal.classList.remove('hidden'); analysisLoading.classList.remove('hidden'); analysisOutput.classList.add('hidden');
+                copyAnalysisBtn.disabled = true;
+                
+                let md = ""; // Rebuild simplified MD for analysis
+                pillarsContainer.querySelectorAll('.pillar-card').forEach(p => {
+                    md += `## ${p.querySelector('.pillar-title').value}\n`;
+                    p.querySelectorAll('.subsection-card').forEach(s => {
+                        const mde = mdeInstances.get(s.querySelector('textarea').id);
+                        md += `### ${s.querySelector('.subsection-title').value}\n${mde ? mde.value() : ''}\n`;
+                    });
+                });
+
+                const res = await callGemini("Tu es un expert en prompt engineering. Analyse ce prompt.", `Analyse:\n${md}`);
+                analysisLoading.classList.add('hidden');
+                if(res) {
+                    analysisOutput.textContent = res; analysisOutput.classList.remove('hidden'); copyAnalysisBtn.disabled = false;
+                } else {
+                    analysisModal.classList.add('hidden');
+                }
+            });
+            document.getElementById('close-analysis-modal-btn').addEventListener('click', () => analysisModal.classList.add('hidden'));
+            copyAnalysisBtn.addEventListener('click', () => { navigator.clipboard.writeText(analysisOutput.textContent); showToast('Copié !', 'success'); });
+
+            // --- Init ---
             function loadDefaults() {
                 rebuildUi({
                     mainTitle: 'Mon Gem Custom',
@@ -810,50 +942,6 @@
                     ]
                 });
             }
-
-            exportMdBtn.addEventListener('click', () => {
-                markdownOutput.textContent = generateMarkdown();
-                modal.classList.remove('hidden');
-            });
-            closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
-            copyMdBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(markdownOutput.textContent).then(() => showToast('Copié !', 'success'));
-            });
-
-            exportPdfBtn.addEventListener('click', () => window.print());
-
-            exportJsonBtn.addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify(getDataAsObject(), null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `${(mainTitleInput.value || 'config').replace(/\s+/g, '-').toLowerCase()}_${getTimestamp()}.json`;
-                a.click();
-            });
-
-            importJsonBtn.addEventListener('click', () => jsonFileInput.click());
-            jsonFileInput.addEventListener('change', (e) => {
-                const r = new FileReader();
-                r.onload = (ev) => { try { rebuildUi(JSON.parse(ev.target.result)); } catch(err) { showToast("JSON invalide", "error"); } };
-                r.readAsText(e.target.files[0]); e.target.value = null;
-            });
-
-            analyzeGeminiBtn.addEventListener('click', async () => {
-                analysisModal.classList.remove('hidden'); analysisLoading.classList.remove('hidden'); analysisOutput.classList.add('hidden');
-                copyAnalysisBtn.disabled = true;
-                const md = generateMarkdown();
-                const res = await callGemini("Tu es un expert en prompt engineering. Analyse les instructions.", `Analyse ceci:\n\n${md}`);
-                analysisLoading.classList.add('hidden');
-                if(res) {
-                    analysisOutput.textContent = res; analysisOutput.classList.remove('hidden'); copyAnalysisBtn.disabled = false;
-                } else {
-                    analysisModal.classList.add('hidden');
-                }
-            });
-            document.getElementById('close-analysis-modal-btn').addEventListener('click', () => analysisModal.classList.add('hidden'));
-            copyAnalysisBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(analysisOutput.textContent).then(() => showToast('Copié !', 'success'));
-            });
-
             loadDefaults();
             new Sortable(pillarsContainer, { animation: 150, handle: '.drag-handle-pillar', ghostClass: 'sortable-ghost' });
         });
