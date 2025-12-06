@@ -1,116 +1,104 @@
-// js/drive.js
-import { showToast } from './utils.js';
+/**
+ * js/drive.js
+ * Gestion Drive avec Métadonnées (Properties)
+ */
 
-let tokenClient = null;
+export const Drive = {
+    /**
+     * Liste les projets (Récupère aussi 'properties' pour le titre court/statut)
+     */
+    async listProjects(folderId = null) {
+        const parentQuery = folderId ? ` and '${folderId}' in parents` : "";
+        const query = `mimeType = 'text/markdown' and trashed = false${parentQuery}`;
 
-export function initDrive() {
-    // Initialisation différée si besoin
-    const clientId = localStorage.getItem('google_client_id');
-    if (clientId && window.google) {
-        initializeGis(clientId);
-    }
-}
-
-function initializeGis(clientId) {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/drive.file',
-        callback: '', // Défini lors de la demande
-    });
-}
-
-export function updateClientId(newClientId) {
-    if (newClientId) {
-        localStorage.setItem('google_client_id', newClientId);
-        initializeGis(newClientId);
-    } else {
-        localStorage.removeItem('google_client_id');
-        tokenClient = null;
-    }
-}
-
-async function handleAuth(callback) {
-    const clientId = localStorage.getItem('google_client_id');
-    if (!clientId) { 
-        showToast("Veuillez configurer votre Google Client ID (⚙️)", "error"); 
-        return; 
-    }
-    
-    if (!tokenClient) initializeGis(clientId);
-    
-    tokenClient.callback = async (resp) => {
-        if (resp.error) { 
-            showToast("Erreur d'authentification", "error"); 
-            throw resp; 
+        try {
+            const response = await gapi.client.drive.files.list({
+                'pageSize': 50,
+                // AJOUT DU CHAMP 'properties' ICI
+                'fields': "files(id, name, modifiedTime, properties)",
+                'q': query,
+                'orderBy': 'modifiedTime desc'
+            });
+            return response.result.files || [];
+        } catch (err) {
+            console.error("Erreur Drive listProjects:", err);
+            throw err;
         }
-        await callback(resp.access_token);
-    };
+    },
 
-    // Si on a un token valide dans gapi (cas rare ici car on utilise REST), on skip
-    // Mais pour GIS simple, on demande toujours ou on laisse le browser gérer le cookie session
-    tokenClient.requestAccessToken({prompt: ''}); // Essayez sans prompt d'abord
-}
+    async listFolders(parentId = 'root') {
+        const query = `mimeType = 'application/vnd.google-apps.folder' and '${parentId}' in parents and trashed = false`;
+        try {
+            const response = await gapi.client.drive.files.list({
+                'pageSize': 50,
+                'fields': "files(id, name)",
+                'q': query,
+                'orderBy': 'name'
+            });
+            return response.result.files || [];
+        } catch (err) {
+            throw err;
+        }
+    },
 
-export function saveFileToDrive(data, filename) {
-    handleAuth(async (token) => {
-        showToast("Sauvegarde vers Drive en cours...");
-        
-        const fileContent = JSON.stringify(data, null, 2);
+    async getFileContent(fileId) {
+        try {
+            const response = await gapi.client.drive.files.get({
+                fileId: fileId,
+                alt: 'media'
+            });
+            return response.body;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    /**
+     * Sauvegarde avec Properties (Métadonnées custom)
+     */
+    async saveFile(fileId, title, content, parentFolderId = null, customProperties = {}) {
         const metadata = {
-            name: filename,
-            mimeType: 'application/json',
+            'name': title,
+            'mimeType': 'text/markdown',
+            // ON INJECTE LES MÉTADONNÉES ICI
+            'properties': customProperties
         };
-        
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', new Blob([fileContent], { type: 'application/json' }));
+
+        if (!fileId && parentFolderId) {
+            metadata.parents = [parentFolderId];
+        }
+
+        const boundary = '-------314159265358979323846';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
+
+        const multipartRequestBody =
+            delimiter +
+            'Content-Type: application/json\r\n\r\n' +
+            JSON.stringify(metadata) +
+            delimiter +
+            'Content-Type: text/markdown\r\n\r\n' +
+            content +
+            close_delim;
+
+        const method = fileId ? 'PATCH' : 'POST';
+        const path = '/upload/drive/v3/files' + (fileId ? '/' + fileId : '');
 
         try {
-            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST',
-                headers: new Headers({ 'Authorization': 'Bearer ' + token }),
-                body: form
+            const response = await gapi.client.request({
+                'path': path,
+                'method': method,
+                'params': {'uploadType': 'multipart'},
+                'headers': {
+                    'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+                },
+                'body': multipartRequestBody
             });
-            const resData = await response.json();
-            if (resData.id) showToast(`Sauvegardé ! (ID: ${resData.id})`, "success");
-            else throw new Error("Réponse Drive invalide");
-        } catch (e) {
-            console.error(e);
-            showToast("Erreur lors de la sauvegarde Drive", "error");
-        }
-    });
-}
 
-export function listDriveFiles(callback) {
-    handleAuth(async (token) => {
-        try {
-            const q = "mimeType = 'application/json' and trashed = false";
-            const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)`, {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            const data = await response.json();
-            callback(data.files || []);
-        } catch (e) {
-            console.error(e);
-            showToast("Erreur lors du listing des fichiers", "error");
-            callback(null);
+            return response.result;
+        } catch (err) {
+            console.error("Erreur saveFile:", err);
+            throw err;
         }
-    });
-}
-
-export function loadFileContent(fileId, callback) {
-    handleAuth(async (token) => {
-        showToast("Téléchargement du fichier...");
-        try {
-            const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            const data = await response.json();
-            callback(data);
-            showToast("Fichier chargé !", "success");
-        } catch (e) {
-            console.error(e);
-            showToast("Erreur lors de la lecture du fichier", "error");
-        }
-    });
-}
+    }
+};
