@@ -6,7 +6,7 @@ import * as Drive from './drive.js';
 
 // ============================================================
 // CONFIGURATION GOOGLE DRIVE
-const GOOGLE_CLIENT_ID = "VOTRE_CLIENT_ID_ICI.apps.googleusercontent.com"; 
+const GOOGLE_CLIENT_ID = "912917090028-6jmainstltc8q129h6hlsa026ik2boei.apps.googleusercontent.com"; 
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
