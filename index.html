@@ -3,23 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurateur de Gem Custom v4</title>
+    <title>Configurateur de Gem Custom v5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
     <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
-
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Ajustement marge pour laisser place à la sidebar (par défaut à gauche) */
         body.legend-left { padding-left: 260px; padding-right: 0; }
         body.legend-right { padding-right: 260px; padding-left: 0; }
-        
-        /* Transitions douces pour le layout */
         body, #legend-sidebar { transition: all 0.3s ease-in-out; }
-
         @media (max-width: 1024px) {
             body.legend-left, body.legend-right { padding: 0; }
             #legend-sidebar { transform: translateX(-100%); z-index: 1000; }
@@ -30,73 +25,86 @@
 
 <body class="bg-gray-100 min-h-screen legend-left">
 
-    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm py-3 px-4 no-print">
-        <div class="max-w-7xl mx-auto flex flex-wrap justify-center items-center gap-3">
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm py-2 px-4 no-print">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-center items-center gap-2">
             
-            <div class="flex items-center gap-2">
-                <button id="settings-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-1.5 px-3 rounded text-sm flex items-center gap-1">
-                    ⚙️ <span class="hidden sm:inline">Paramètres</span>
+            <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                <button id="header-login-btn" class="tooltip-btn flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-sm rounded transition-all" data-tooltip="Connexion Google Drive">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="login-status-text">Connexion</span>
+                </button>
+                
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+
+                <button id="header-folder-btn" class="tooltip-btn flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 cursor-not-allowed rounded transition-all" disabled data-tooltip="Choisir le dossier de destination">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                    <span id="header-folder-name" class="max-w-[100px] truncate">Dossier...</span>
                 </button>
             </div>
 
-            <div class="h-6 w-px bg-gray-300 mx-1"></div>
+            <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                <button id="export-md-btn" class="tooltip-btn flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-white hover:text-purple-700 hover:shadow-sm rounded transition-all" data-tooltip="Voir le code Markdown">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Markdown</span>
+                </button>
+            </div>
 
-            <button id="save-drive-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-4 rounded text-sm flex items-center gap-2 shadow-sm">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.01 1.485c2.082 0 3.754.025 4.57.52C18.977 3.45 20.306 6.36 20.3 7.64c.005.518-.096.727-.29 1.07l-6.42 11.23c-1.22 2.13-2.61 2.37-3.99 2.37-1.42 0-3.09-.43-4.25-2.45L2.26 14.4c-.6-.99-.59-2.22.02-3.23l2.67-4.66c.64-1.12 1.57-2.3 2.87-3.22.97-.68 2.65-1.78 4.19-1.805zM12 4.5c-1.51 0-2.82.78-3.79 1.9L6.5 9.17l4.7 8.16c.38.65.98 1.17 1.8 1.17.82 0 1.42-.52 1.8-1.17l3.89-6.73c.47-.81.25-1.74-.35-2.34l-3.3-3.3c-.6-.6-1.54-.84-2.39-.45L12 4.5z"/></svg>
-                Sauver
-            </button>
-            <button id="load-drive-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-4 rounded text-sm shadow-sm">
-                Charger
-            </button>
+            <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                <button id="import-json-btn" class="tooltip-btn p-1.5 text-gray-600 hover:text-yellow-600 hover:bg-white hover:shadow-sm rounded transition-colors" data-tooltip="Importer depuis le PC (JSON)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                </button>
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                <button id="export-json-btn" class="tooltip-btn p-1.5 text-gray-600 hover:text-green-600 hover:bg-white hover:shadow-sm rounded transition-colors" data-tooltip="Télécharger sur le PC (JSON)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </button>
+                <input type="file" id="json-file-input" accept=".json" class="hidden">
+            </div>
 
-            <div class="h-6 w-px bg-gray-300 mx-1"></div>
+            <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                <button id="load-drive-btn" class="tooltip-btn p-1.5 text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded transition-colors" data-tooltip="Ouvrir depuis Drive">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+                </button>
+                <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                <button id="save-drive-btn" class="tooltip-btn p-1.5 text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded transition-colors" data-tooltip="Enregistrer sur Drive">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </button>
+            </div>
 
-            <button id="export-md-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-medium py-1.5 px-3 rounded text-sm">MD</button>
-            <button id="export-json-btn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-1.5 px-3 rounded text-sm">JSON ⬇</button>
-            <button id="import-json-btn" class="bg-yellow-500 hover:bg-yellow-600 text-gray-800 font-medium py-1.5 px-3 rounded text-sm">JSON ⬆</button>
-            <input type="file" id="json-file-input" accept=".json" class="hidden">
-
-            <div class="h-6 w-px bg-gray-300 mx-1"></div>
-
-            <button id="toggle-legend-pos-btn" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 font-medium py-1.5 px-3 rounded text-sm flex items-center gap-1" title="Déplacer la légende">
-                <span id="legend-pos-icon">⬅</span> Légende
+            <button id="toggle-legend-pos-btn" class="tooltip-btn ml-2 p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" data-tooltip="Déplacer la légende">
+                <span id="legend-pos-icon" class="text-lg">⬅</span>
             </button>
         </div>
     </header>
 
-    <div class="sticky top-[60px] z-40 bg-gray-100/95 backdrop-blur-sm py-4 border-b border-gray-200 shadow-sm mb-6 no-print">
+    <div class="sticky top-[58px] z-40 bg-gray-100/95 backdrop-blur-sm py-4 border-b border-gray-200 shadow-sm mb-6 no-print">
         <div class="max-w-4xl mx-auto px-4">
             <input type="text" id="main-title" 
                    class="text-3xl md:text-4xl font-bold text-gray-800 bg-transparent border-b-2 border-transparent focus:border-gray-400 focus:ring-0 focus:outline-none w-full p-2 text-center placeholder-gray-400 transition-colors" 
                    value="Mon Gem Custom" 
-                   placeholder="Titre du projet (Markdown H1)">
+                   placeholder="Titre du projet">
         </div>
     </div>
 
     <aside id="legend-sidebar" class="fixed top-0 bottom-0 w-[250px] bg-white border-r border-gray-200 shadow-lg overflow-y-auto p-4 z-30 no-print" style="left: 0;">
-        <div class="mt-[140px]"> <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 uppercase text-xs tracking-wider">Aide-Mémoire</h3>
-            
+        <div class="mt-[140px]">
+            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 uppercase text-xs tracking-wider">Aide-Mémoire</h3>
             <div class="space-y-4 text-sm">
                 <div class="p-3 bg-gray-50 rounded border border-gray-100">
                     <span class="font-bold block text-gray-900 mb-1">Gras</span>
                     <p class="text-gray-500 text-xs">Priorité, Point Focal, Contrainte forte.</p>
                 </div>
-                
                 <div class="p-3 bg-gray-50 rounded border border-gray-100">
                     <span class="italic block text-gray-900 mb-1">Italique</span>
                     <p class="text-gray-500 text-xs">Nuance, Titre, Autre langue, Définition.</p>
                 </div>
-
                 <div class="p-3 bg-gray-50 rounded border border-gray-100">
                     <span class="font-bold italic block text-gray-900 mb-1 text-xs">Double Emphase</span>
                     <p class="text-gray-500 text-xs">Emphase critique, Alerte, Règle absolue.</p>
                 </div>
-
                 <div class="p-3 bg-gray-50 rounded border border-gray-100 border-l-4 border-l-gray-500">
                     <span class="font-semibold block text-gray-500 mb-1">Quote</span>
                     <p class="text-gray-500 text-xs">Citation, Délimiteur de contexte.</p>
                 </div>
-
                 <div class="p-3 bg-gray-800 rounded border border-gray-700 text-white">
                     <span class="font-mono bg-gray-700 px-1 rounded text-xs block w-max mb-1">Code</span>
                     <p class="text-gray-300 text-xs">Nom de variable, commande, littéralité.</p>
@@ -105,9 +113,8 @@
         </div>
     </aside>
 
-    <div class="max-w-5xl mx-auto px-4 pb-20"> <main id="pillars-container" class="space-y-6 min-h-[100px]">
-            </main>
-
+    <div class="max-w-5xl mx-auto px-4 pb-20">
+        <main id="pillars-container" class="space-y-6 min-h-[100px]"></main>
         <div class="mt-8 text-center no-print">
             <button id="add-pillar-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105 flex items-center gap-2 mx-auto">
                 <span class="text-xl">+</span> Ajouter un Pilier
@@ -116,34 +123,6 @@
     </div>
 
     <div id="toast-container"></div>
-
-    <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100] hidden no-print">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-xl font-semibold">Paramètres Google Drive</h3>
-                <button id="close-settings-btn" class="text-gray-400 hover:text-gray-700">✕</button>
-            </div>
-            <div class="p-6 space-y-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-700">Compte Google</p>
-                        <span id="auth-status-text" class="text-sm text-red-500 font-bold">Non connecté</span>
-                    </div>
-                    <button id="google-login-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded shadow transition">Se connecter</button>
-                </div>
-                <div id="folder-section" class="border-t pt-6 opacity-50 pointer-events-none transition-opacity">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Dossier de destination</label>
-                    <div class="flex items-center gap-2 mb-2">
-                        <div id="current-folder-name" class="flex-grow p-2 bg-gray-100 rounded text-sm text-gray-600 italic border border-gray-200">Racine (Mon Drive)</div>
-                        <button id="change-folder-btn" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm py-2 px-3 rounded shadow-sm">Changer</button>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 border-t bg-gray-50 rounded-b-lg flex justify-end">
-                <button id="save-settings-btn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg">Fermer</button>
-            </div>
-        </div>
-    </div>
 
     <div id="folder-picker-modal" class="fixed inset-0 bg-gray-800 bg-opacity-90 flex items-center justify-center p-4 z-[110] hidden no-print">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[70vh]">

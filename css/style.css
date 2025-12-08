@@ -43,3 +43,48 @@ body {
     .print-content { display: block; white-space: pre-wrap; font-size: 10pt; }
 }
 .print-content { display: none; }
+
+/* TOOLTIPS CSS PUR (Style GitHub/Vercel) */
+.tooltip-btn {
+    position: relative;
+}
+.tooltip-btn::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -35px; /* Position sous le bouton */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1f2937; /* Gris sombre */
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.tooltip-btn::after {
+    /* Petite flèche du tooltip */
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #1f2937 transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    z-index: 100;
+}
+.tooltip-btn:hover::before,
+.tooltip-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+}

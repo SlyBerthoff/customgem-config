@@ -6,15 +6,13 @@ import * as Drive from './drive.js';
 
 // ============================================================
 // CONFIGURATION GOOGLE DRIVE
-const GOOGLE_CLIENT_ID = "912917090028-6jmainstltc8q129h6hlsa026ik2boei.apps.googleusercontent.com"; 
+const GOOGLE_CLIENT_ID = "VOTRE_CLIENT_ID_ICI.apps.googleusercontent.com"; 
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
         const pillarsContainer = document.getElementById('pillars-container');
         const mainTitleInput = document.getElementById('main-title');
-
-        if (!pillarsContainer) throw new Error("Container principal 'pillars-container' introuvable.");
 
         // --- Init Drive ---
         if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.includes("googleusercontent.com")) {
@@ -24,52 +22,123 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("Client ID manquant.");
         }
 
-        // --- Helpers ---
         function attach(id, event, handler) {
             const el = document.getElementById(id);
             if (el) el.addEventListener(event, handler);
         }
 
-        // --- GESTION DU LAYOUT (Légende Gauche/Droite) ---
+        // --- GESTION HEADER / DRIVE UI ---
+        const loginBtn = document.getElementById('header-login-btn');
+        const loginText = document.getElementById('login-status-text');
+        const folderBtn = document.getElementById('header-folder-btn');
+        const folderNameDisplay = document.getElementById('header-folder-name');
+
+        // Init folder name display
+        let savedFolderName = localStorage.getItem('gem_drive_folder_name') || 'Racine';
+        if(folderNameDisplay) folderNameDisplay.textContent = savedFolderName;
+
+        // EVENT: Connexion réussie
+        document.addEventListener('drive-connected', () => {
+            // Update Bouton Login
+            if(loginBtn && loginText) {
+                loginText.textContent = "Connecté";
+                loginBtn.classList.add('text-green-700', 'bg-green-50', 'border-green-200');
+                loginBtn.classList.remove('text-gray-700', 'hover:bg-white');
+                loginBtn.querySelector('svg').classList.remove('text-blue-600');
+                loginBtn.querySelector('svg').classList.add('text-green-600');
+            }
+            // Enable Bouton Dossier
+            if(folderBtn) {
+                folderBtn.disabled = false;
+                folderBtn.classList.remove('text-gray-400', 'cursor-not-allowed');
+                folderBtn.classList.add('text-gray-700', 'hover:bg-white', 'hover:text-blue-600', 'hover:shadow-sm', 'cursor-pointer');
+            }
+        });
+
+        // ACTION: Connexion
+        attach('header-login-btn', 'click', () => {
+            if(GOOGLE_CLIENT_ID) {
+                Drive.initTokenClient(GOOGLE_CLIENT_ID);
+                Drive.login();
+            } else {
+                showToast("Client ID manquant", "error");
+            }
+        });
+
+        // ACTION: Ouvrir Selecteur Dossier
+        attach('header-folder-btn', 'click', async () => {
+            const modal = document.getElementById('folder-picker-modal');
+            const list = document.getElementById('folder-list-container');
+            
+            modal.classList.remove('hidden');
+            list.innerHTML = '<p class="text-center text-gray-500 py-4">Chargement...</p>';
+            
+            const folders = await Drive.listFolders();
+            list.innerHTML = '';
+            
+            // Racine
+            const rootDiv = document.createElement('div');
+            rootDiv.className = "p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-2";
+            rootDiv.innerHTML = "📁 <b>Racine (Mon Drive)</b>";
+            rootDiv.onclick = () => selectFolder(null, "Racine");
+            list.appendChild(rootDiv);
+
+            folders.forEach(f => {
+                const div = document.createElement('div');
+                div.className = "p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-2 text-sm";
+                div.innerHTML = `📁 ${f.name}`;
+                div.onclick = () => selectFolder(f.id, f.name);
+                list.appendChild(div);
+            });
+        });
+
+        function selectFolder(id, name) {
+            if(id) localStorage.setItem('gem_drive_folder_id', id);
+            else localStorage.removeItem('gem_drive_folder_id');
+            localStorage.setItem('gem_drive_folder_name', name);
+            if(folderNameDisplay) folderNameDisplay.textContent = name;
+            document.getElementById('folder-picker-modal').classList.add('hidden');
+        }
+
+        attach('close-folder-picker', 'click', () => document.getElementById('folder-picker-modal').classList.add('hidden'));
+        attach('create-app-folder-btn', 'click', async () => {
+            const f = await Drive.createAppFolder();
+            if(f) { selectFolder(f.id, f.name); showToast("Dossier créé !", "success"); }
+        });
+
+
+        // --- GESTION LAYOUT ---
         const body = document.body;
         const sidebar = document.getElementById('legend-sidebar');
-        const toggleLegendBtn = document.getElementById('toggle-legend-pos-btn');
         const legendIcon = document.getElementById('legend-pos-icon');
-        let isLeft = true; // Défaut
+        let isLeft = true;
 
         attach('toggle-legend-pos-btn', 'click', () => {
             isLeft = !isLeft;
             if (isLeft) {
-                body.classList.remove('legend-right');
-                body.classList.add('legend-left');
-                sidebar.style.left = '0';
-                sidebar.style.right = 'auto';
-                sidebar.style.borderRightWidth = '1px';
-                sidebar.style.borderLeftWidth = '0';
+                body.classList.remove('legend-right'); body.classList.add('legend-left');
+                sidebar.style.left = '0'; sidebar.style.right = 'auto';
+                sidebar.style.borderRightWidth = '1px'; sidebar.style.borderLeftWidth = '0';
                 legendIcon.textContent = "⬅";
             } else {
-                body.classList.remove('legend-left');
-                body.classList.add('legend-right');
-                sidebar.style.left = 'auto';
-                sidebar.style.right = '0';
-                sidebar.style.borderLeftWidth = '1px';
-                sidebar.style.borderRightWidth = '0';
+                body.classList.remove('legend-left'); body.classList.add('legend-right');
+                sidebar.style.left = 'auto'; sidebar.style.right = '0';
+                sidebar.style.borderLeftWidth = '1px'; sidebar.style.borderRightWidth = '0';
                 legendIcon.textContent = "➡";
             }
         });
 
-        // --- Boutons Principaux ---
+
+        // --- LOGIQUE METIER (Piliers) ---
         attach('add-pillar-btn', 'click', () => {
             const p = createPillar('Nouveau Pilier', getNextColorSet(), [{title:'Section 1', content:''}]);
             pillarsContainer.appendChild(p);
             p.scrollIntoView({behavior:'smooth'});
         });
 
-        // --- Délégation (Piliers/Sections) ---
         pillarsContainer.addEventListener('click', (e) => {
             if (e.target.closest('.drag-handle-pillar') || e.target.closest('.drag-handle-sub')) return;
 
-            // Toggle
             const toggleP = e.target.closest('.toggle-pillar-btn');
             if (toggleP) {
                 toggleP.closest('.pillar-card').querySelector('.subsections-container').classList.toggle('is-closed');
@@ -83,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Actions
             const addSub = e.target.closest('.add-subsection-btn');
             if (addSub) {
                 const card = addSub.closest('.pillar-card');
@@ -99,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const delSub = e.target.closest('.delete-subsection-btn');
-            if (delSub && confirm("Supprimer cette section ?")) {
+            if (delSub && confirm("Supprimer ?")) {
                 const card = delSub.closest('.subsection-card');
                 const id = card.querySelector('textarea').id;
                 if(mdeInstances.has(id)) { mdeInstances.get(id).toTextArea(); mdeInstances.delete(id); }
@@ -107,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const delPil = e.target.closest('.delete-pillar-btn');
-            if (delPil && confirm("Supprimer ce pilier ?")) {
+            if (delPil && confirm("Supprimer ?")) {
                 const card = delPil.closest('.pillar-card');
                 card.querySelectorAll('textarea').forEach(t => { 
                     if(mdeInstances.has(t.id)) { mdeInstances.get(t.id).toTextArea(); mdeInstances.delete(t.id); }
@@ -116,87 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- Modale Settings ---
-        const settingsModal = document.getElementById('settings-modal');
-        const authStatusText = document.getElementById('auth-status-text');
-        const folderSection = document.getElementById('folder-section');
-        const loginBtn = document.getElementById('google-login-btn');
-
-        document.addEventListener('drive-connected', () => {
-            if(authStatusText) {
-                authStatusText.textContent = "Connecté ✅";
-                authStatusText.className = "text-sm font-bold text-green-600";
-            }
-            if(folderSection) folderSection.classList.remove('opacity-50', 'pointer-events-none');
-            if(loginBtn) {
-                loginBtn.textContent = "Compte actif";
-                loginBtn.classList.replace('bg-blue-600', 'bg-green-600');
-                loginBtn.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
-                loginBtn.disabled = true;
-            }
-        });
-
-        attach('settings-btn', 'click', () => {
-            if(settingsModal) settingsModal.classList.remove('hidden');
-            if (Drive.isConnected()) document.dispatchEvent(new CustomEvent('drive-connected'));
-        });
-
-        attach('close-settings-btn', 'click', () => settingsModal.classList.add('hidden'));
-        attach('save-settings-btn', 'click', () => settingsModal.classList.add('hidden'));
-
-        attach('google-login-btn', 'click', () => {
-            if(GOOGLE_CLIENT_ID) {
-                Drive.initTokenClient(GOOGLE_CLIENT_ID);
-                Drive.login();
-            } else {
-                showToast("Client ID manquant", "error");
-            }
-        });
-
-        // --- Folder Picker ---
-        const folderModal = document.getElementById('folder-picker-modal');
-        const folderList = document.getElementById('folder-list-container');
-        const currentFolderLabel = document.getElementById('current-folder-name');
-        
-        let savedFolderName = localStorage.getItem('gem_drive_folder_name') || 'Racine (Mon Drive)';
-        if(currentFolderLabel) currentFolderLabel.textContent = savedFolderName;
-
-        attach('change-folder-btn', 'click', async () => {
-            folderModal.classList.remove('hidden');
-            folderList.innerHTML = '<p class="text-center text-gray-500 py-4">Chargement...</p>';
-            const folders = await Drive.listFolders();
-            folderList.innerHTML = '';
-            
-            const rootDiv = document.createElement('div');
-            rootDiv.className = "p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-2";
-            rootDiv.innerHTML = "📁 <b>Racine (Mon Drive)</b>";
-            rootDiv.onclick = () => selectFolder(null, "Racine (Mon Drive)");
-            folderList.appendChild(rootDiv);
-
-            folders.forEach(f => {
-                const div = document.createElement('div');
-                div.className = "p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-2 text-sm";
-                div.innerHTML = `📁 ${f.name}`;
-                div.onclick = () => selectFolder(f.id, f.name);
-                folderList.appendChild(div);
-            });
-        });
-
-        function selectFolder(id, name) {
-            if(id) localStorage.setItem('gem_drive_folder_id', id);
-            else localStorage.removeItem('gem_drive_folder_id');
-            localStorage.setItem('gem_drive_folder_name', name);
-            if(currentFolderLabel) currentFolderLabel.textContent = name;
-            folderModal.classList.add('hidden');
-        }
-
-        attach('close-folder-picker', 'click', () => folderModal.classList.add('hidden'));
-        attach('create-app-folder-btn', 'click', async () => {
-            const f = await Drive.createAppFolder();
-            if(f) { selectFolder(f.id, f.name); showToast("Dossier créé !", "success"); }
-        });
-
-        // --- Actions Footer (Devenus Header) ---
+        // --- ACTIONS FICHIERS ---
         attach('save-drive-btn', 'click', () => {
             const data = getDataAsObject();
             const safeTitle = (mainTitleInput.value || 'projet').replace(/[^a-z0-9]/gi, '-').toLowerCase();
@@ -204,6 +192,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const fid = localStorage.getItem('gem_drive_folder_id');
             Drive.saveFile(data, fname, fid);
         });
+
+        attach('load-drive-btn', 'click', async () => {
+            if(!Drive.isConnected()) { showToast("Veuillez vous connecter", "error"); return; }
+            const modal = document.getElementById('drive-modal');
+            const list = document.getElementById('drive-file-list');
+            modal.classList.remove('hidden');
+            list.innerHTML = '<p class="text-center text-gray-500">Chargement...</p>';
+            const files = await Drive.listJsonFiles();
+            list.innerHTML = '';
+            files.forEach(f => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between p-3 border-b hover:bg-gray-50 cursor-pointer items-center";
+                div.innerHTML = `<span>${f.name}</span> <span class="text-xs text-gray-400">${new Date(f.modifiedTime).toLocaleDateString()}</span>`;
+                div.onclick = async () => {
+                    const content = await Drive.loadFileContent(f.id);
+                    if(content) { rebuildUi(content); modal.classList.add('hidden'); }
+                };
+                list.appendChild(div);
+            });
+        });
+        attach('close-drive-modal-btn', 'click', () => document.getElementById('drive-modal').classList.add('hidden'));
 
         attach('export-json-btn', 'click', () => {
             const blob = new Blob([JSON.stringify(getDataAsObject(), null, 2)], {type:'application/json'});
@@ -217,8 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             r.readAsText(e.target.files[0]); e.target.value = '';
         });
 
-        // Markdown Export
-        const mdModal = document.getElementById('markdown-modal');
         attach('export-md-btn', 'click', () => {
             let md = `# ${mainTitleInput.value}\n\n`;
             document.querySelectorAll('.pillar-card').forEach(p => {
@@ -229,37 +236,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             document.getElementById('markdown-output').textContent = md;
-            mdModal.classList.remove('hidden');
+            document.getElementById('markdown-modal').classList.remove('hidden');
         });
-        attach('close-md-modal-btn', 'click', () => mdModal.classList.add('hidden'));
+        attach('close-md-modal-btn', 'click', () => document.getElementById('markdown-modal').classList.add('hidden'));
         attach('copy-md-btn', 'click', () => {
             navigator.clipboard.writeText(document.getElementById('markdown-output').textContent);
             showToast("Copié !", "success");
         });
 
-        // Drive Load
-        const driveModal = document.getElementById('drive-modal');
-        const driveList = document.getElementById('drive-file-list');
-        attach('load-drive-btn', 'click', async () => {
-            if(!Drive.isConnected()) { showToast("Veuillez vous connecter", "error"); return; }
-            driveModal.classList.remove('hidden');
-            driveList.innerHTML = '<p class="text-center text-gray-500">Chargement...</p>';
-            const files = await Drive.listJsonFiles();
-            driveList.innerHTML = '';
-            files.forEach(f => {
-                const div = document.createElement('div');
-                div.className = "flex justify-between p-3 border-b hover:bg-gray-50 cursor-pointer items-center";
-                div.innerHTML = `<span>${f.name}</span> <span class="text-xs text-gray-400">${new Date(f.modifiedTime).toLocaleDateString()}</span>`;
-                div.onclick = async () => {
-                    const content = await Drive.loadFileContent(f.id);
-                    if(content) { rebuildUi(content); driveModal.classList.add('hidden'); }
-                };
-                driveList.appendChild(div);
-            });
-        });
-        attach('close-drive-modal-btn', 'click', () => driveModal.classList.add('hidden'));
-
-        // --- Helpers ---
+        // --- Helpers internes ---
         function getDataAsObject() {
             return {
                 mainTitle: mainTitleInput.value,
