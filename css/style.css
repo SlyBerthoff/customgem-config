@@ -1,20 +1,48 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* --- BASICS & DARK MODE --- */
+:root {
+    --bg-color: #f3f4f6;
+    --text-color: #1f2937;
+    --sidebar-bg: #ffffff;
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+}
+
+body.dark-mode {
+    --bg-color: #111827;
+    --text-color: #e5e7eb;
+    --sidebar-bg: #1f2937;
+    --card-bg: #374151;
+    --border-color: #4b5563;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Sidebar Specifics */
+#legend-sidebar {
+    background-color: var(--sidebar-bg);
+    border-color: var(--border-color);
+}
+
+/* Inputs Dark Mode Override */
+body.dark-mode input[type="text"] {
+    color: #e5e7eb;
+}
+body.dark-mode input[type="text"]::placeholder {
+    color: #6b7280;
 }
 
 /* EasyMDE Tweaks */
 .editor-statusbar { display: none !important; }
 .easymde-container .CodeMirror { border: none; border-radius: 0 0 8px 8px; background-color: var(--easymde-bg, #FFFFFF); transition: background-color 0.3s ease; }
 .easymde-container .editor-toolbar { border: none; border-bottom: 1px dashed #cccccc; background-color: var(--easymde-bg, #FFFFFF); }
-
-/* TRUC VISUEL : Atténuer la syntaxe Markdown */
-.cm-formatting {
-    color: #cbd5e1 !important; /* Gris très clair (Tailwind slate-300) */
-    font-weight: normal !important;
-}
 
 /* UI Elements */
 .toggle-icon { transition: transform 0.2s; transform: rotate(90deg); }
@@ -41,50 +69,32 @@ body {
     .pillar-card { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
     .easymde-container { display: none; }
     .print-content { display: block; white-space: pre-wrap; font-size: 10pt; }
+    #legend-sidebar { display: none; }
+    body { padding: 0 !important; }
 }
 .print-content { display: none; }
 
-/* TOOLTIPS CSS PUR (Style GitHub/Vercel) */
-.tooltip-btn {
-    position: relative;
-}
+/* TOOLTIPS CSS PUR */
+.tooltip-btn { position: relative; }
 .tooltip-btn::before {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: -35px; /* Position sous le bouton */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #1f2937; /* Gris sombre */
-    color: white;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
-    pointer-events: none;
-    z-index: 100;
+    /* Affichage à droite par défaut pour la sidebar */
+    left: 105%; top: 50%; transform: translateY(-50%);
+    background-color: #111827; color: white;
+    padding: 6px 10px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+    opacity: 0; visibility: hidden; transition: opacity 0.2s; pointer-events: none; z-index: 200;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 .tooltip-btn::after {
-    /* Petite flèche du tooltip */
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent transparent #1f2937 transparent;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
-    pointer-events: none;
-    z-index: 100;
+    content: ''; position: absolute;
+    left: 95%; top: 50%; transform: translateY(-50%);
+    border-width: 5px; border-style: solid;
+    border-color: transparent #111827 transparent transparent;
+    opacity: 0; visibility: hidden; transition: opacity 0.2s; pointer-events: none; z-index: 200;
 }
-.tooltip-btn:hover::before,
-.tooltip-btn:hover::after {
-    opacity: 1;
-    visibility: visible;
-}
+.tooltip-btn:hover::before, .tooltip-btn:hover::after { opacity: 1; visibility: visible; }
+
+/* Ajustement tooltip si sidebar à droite */
+body.legend-right .tooltip-btn::before { left: auto; right: 105%; }
+body.legend-right .tooltip-btn::after { left: auto; right: 95%; border-color: transparent transparent transparent #111827; }

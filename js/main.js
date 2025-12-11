@@ -14,12 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const pillarsContainer = document.getElementById('pillars-container');
         const mainTitleInput = document.getElementById('main-title');
 
+        if (!pillarsContainer) throw new Error("Container principal introuvable.");
+
         // --- Init Drive ---
-        if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.includes("googleusercontent.com")) {
+        if (GOOGLE_CLIENT_ID) {
             localStorage.setItem('google_client_id', GOOGLE_CLIENT_ID);
             Drive.initTokenClient(GOOGLE_CLIENT_ID);
-        } else {
-            console.warn("Client ID manquant.");
         }
 
         function attach(id, event, handler) {
@@ -27,65 +27,90 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.addEventListener(event, handler);
         }
 
-        // --- GESTION HEADER / DRIVE UI ---
+        // --- DARK MODE LOGIC ---
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const isDarkMode = localStorage.getItem('forge_dark_mode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+            if(darkModeToggle) darkModeToggle.textContent = '☀️';
+        }
+
+        attach('dark-mode-toggle', 'click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('forge_dark_mode', isDark);
+            darkModeToggle.textContent = isDark ? '☀️' : '🌙';
+        });
+
+        // --- SIDEBAR POSITION ---
+        const body = document.body;
+        const sidebar = document.getElementById('legend-sidebar');
+        const legendIcon = document.getElementById('legend-pos-icon');
+        const legendText = document.getElementById('legend-pos-text');
+        let isLeft = true;
+
+        attach('toggle-legend-pos-btn', 'click', () => {
+            isLeft = !isLeft;
+            if (isLeft) {
+                body.classList.remove('legend-right'); body.classList.add('legend-left');
+                sidebar.style.left = '0'; sidebar.style.right = 'auto';
+                sidebar.style.borderRightWidth = '1px'; sidebar.style.borderLeftWidth = '0';
+                legendIcon.textContent = "⬅";
+                if(legendText) legendText.textContent = "Sidebar à Gauche";
+            } else {
+                body.classList.remove('legend-left'); body.classList.add('legend-right');
+                sidebar.style.left = 'auto'; sidebar.style.right = '0';
+                sidebar.style.borderLeftWidth = '1px'; sidebar.style.borderRightWidth = '0';
+                legendIcon.textContent = "➡";
+                if(legendText) legendText.textContent = "Sidebar à Droite";
+            }
+        });
+
+        // --- GESTION CONNEXION DRIVE ---
         const loginBtn = document.getElementById('header-login-btn');
         const loginText = document.getElementById('login-status-text');
         const folderBtn = document.getElementById('header-folder-btn');
         const folderNameDisplay = document.getElementById('header-folder-name');
 
-        // Init folder name display
-        let savedFolderName = localStorage.getItem('gem_drive_folder_name') || 'Racine';
+        let savedFolderName = localStorage.getItem('gem_drive_folder_name') || 'Dossier...';
         if(folderNameDisplay) folderNameDisplay.textContent = savedFolderName;
 
-        // EVENT: Connexion réussie
         document.addEventListener('drive-connected', () => {
-            // Update Bouton Login
             if(loginBtn && loginText) {
-                loginText.textContent = "Connecté";
-                loginBtn.classList.add('text-green-700', 'bg-green-50', 'border-green-200');
-                loginBtn.classList.remove('text-gray-700', 'hover:bg-white');
-                loginBtn.querySelector('svg').classList.remove('text-blue-600');
-                loginBtn.querySelector('svg').classList.add('text-green-600');
+                loginText.textContent = "Compte Connecté";
+                loginBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                loginBtn.classList.add('bg-green-600', 'hover:bg-green-700');
             }
-            // Enable Bouton Dossier
             if(folderBtn) {
                 folderBtn.disabled = false;
-                folderBtn.classList.remove('text-gray-400', 'cursor-not-allowed');
-                folderBtn.classList.add('text-gray-700', 'hover:bg-white', 'hover:text-blue-600', 'hover:shadow-sm', 'cursor-pointer');
+                folderBtn.classList.remove('text-gray-400', 'cursor-not-allowed', 'border-gray-200');
+                folderBtn.classList.add('text-gray-700', 'dark:text-white', 'hover:bg-gray-100', 'dark:hover:bg-gray-700', 'cursor-pointer', 'border-blue-300');
             }
         });
 
-        // ACTION: Connexion
         attach('header-login-btn', 'click', () => {
-            if(GOOGLE_CLIENT_ID) {
-                Drive.initTokenClient(GOOGLE_CLIENT_ID);
-                Drive.login();
-            } else {
-                showToast("Client ID manquant", "error");
-            }
+            if(GOOGLE_CLIENT_ID) { Drive.initTokenClient(GOOGLE_CLIENT_ID); Drive.login(); }
         });
 
-        // ACTION: Ouvrir Selecteur Dossier
+        // --- FOLDER PICKER ---
         attach('header-folder-btn', 'click', async () => {
             const modal = document.getElementById('folder-picker-modal');
             const list = document.getElementById('folder-list-container');
-            
             modal.classList.remove('hidden');
-            list.innerHTML = '<p class="text-center text-gray-500 py-4">Chargement...</p>';
+            list.innerHTML = '<p class="text-center py-4">Chargement...</p>';
             
             const folders = await Drive.listFolders();
             list.innerHTML = '';
             
-            // Racine
             const rootDiv = document.createElement('div');
-            rootDiv.className = "p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-2";
-            rootDiv.innerHTML = "📁 <b>Racine (Mon Drive)</b>";
+            rootDiv.className = "p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 flex items-center gap-2";
+            rootDiv.innerHTML = "📁 <b>Racine</b>";
             rootDiv.onclick = () => selectFolder(null, "Racine");
             list.appendChild(rootDiv);
 
             folders.forEach(f => {
                 const div = document.createElement('div');
-                div.className = "p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-2 text-sm";
+                div.className = "p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 flex items-center gap-2 text-sm";
                 div.innerHTML = `📁 ${f.name}`;
                 div.onclick = () => selectFolder(f.id, f.name);
                 list.appendChild(div);
@@ -102,34 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         attach('close-folder-picker', 'click', () => document.getElementById('folder-picker-modal').classList.add('hidden'));
         attach('create-app-folder-btn', 'click', async () => {
-            const f = await Drive.createAppFolder();
+            const f = await Drive.createAppFolder("F.O.R.G.E. Projects");
             if(f) { selectFolder(f.id, f.name); showToast("Dossier créé !", "success"); }
         });
 
-
-        // --- GESTION LAYOUT ---
-        const body = document.body;
-        const sidebar = document.getElementById('legend-sidebar');
-        const legendIcon = document.getElementById('legend-pos-icon');
-        let isLeft = true;
-
-        attach('toggle-legend-pos-btn', 'click', () => {
-            isLeft = !isLeft;
-            if (isLeft) {
-                body.classList.remove('legend-right'); body.classList.add('legend-left');
-                sidebar.style.left = '0'; sidebar.style.right = 'auto';
-                sidebar.style.borderRightWidth = '1px'; sidebar.style.borderLeftWidth = '0';
-                legendIcon.textContent = "⬅";
-            } else {
-                body.classList.remove('legend-left'); body.classList.add('legend-right');
-                sidebar.style.left = 'auto'; sidebar.style.right = '0';
-                sidebar.style.borderLeftWidth = '1px'; sidebar.style.borderRightWidth = '0';
-                legendIcon.textContent = "➡";
-            }
-        });
-
-
-        // --- LOGIQUE METIER (Piliers) ---
+        // --- CORE LOGIC (Pillars) ---
         attach('add-pillar-btn', 'click', () => {
             const p = createPillar('Nouveau Pilier', getNextColorSet(), [{title:'Section 1', content:''}]);
             pillarsContainer.appendChild(p);
@@ -138,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pillarsContainer.addEventListener('click', (e) => {
             if (e.target.closest('.drag-handle-pillar') || e.target.closest('.drag-handle-sub')) return;
-
             const toggleP = e.target.closest('.toggle-pillar-btn');
             if (toggleP) {
                 toggleP.closest('.pillar-card').querySelector('.subsections-container').classList.toggle('is-closed');
@@ -151,21 +152,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleS.querySelector('.toggle-icon').classList.toggle('is-closed');
                 return;
             }
-
             const addSub = e.target.closest('.add-subsection-btn');
             if (addSub) {
                 const card = addSub.closest('.pillar-card');
-                const colorSet = JSON.parse(card.dataset.colorSet);
-                const newSub = createSubsection('Nouvelle Section', '', colorSet, false);
+                const newSub = createSubsection('Nouvelle Section', '', JSON.parse(card.dataset.colorSet), false);
                 card.querySelector('.subsections-container').appendChild(newSub);
                 setTimeout(() => {
                     const id = newSub.querySelector('textarea').id;
-                    const mde = mdeInstances.get(id);
-                    if(mde) mde.codemirror.focus();
+                    if(mdeInstances.has(id)) mdeInstances.get(id).codemirror.focus();
                 }, 200);
                 return;
             }
-            
             const delSub = e.target.closest('.delete-subsection-btn');
             if (delSub && confirm("Supprimer ?")) {
                 const card = delSub.closest('.subsection-card');
@@ -173,37 +170,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(mdeInstances.has(id)) { mdeInstances.get(id).toTextArea(); mdeInstances.delete(id); }
                 card.remove(); return;
             }
-
             const delPil = e.target.closest('.delete-pillar-btn');
             if (delPil && confirm("Supprimer ?")) {
                 const card = delPil.closest('.pillar-card');
-                card.querySelectorAll('textarea').forEach(t => { 
-                    if(mdeInstances.has(t.id)) { mdeInstances.get(t.id).toTextArea(); mdeInstances.delete(t.id); }
-                });
+                card.querySelectorAll('textarea').forEach(t => { if(mdeInstances.has(t.id)) { mdeInstances.get(t.id).toTextArea(); mdeInstances.delete(t.id); } });
                 card.remove(); return;
             }
         });
 
-        // --- ACTIONS FICHIERS ---
+        // --- I/O ACTIONS ---
         attach('save-drive-btn', 'click', () => {
             const data = getDataAsObject();
-            const safeTitle = (mainTitleInput.value || 'projet').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+            const safeTitle = (mainTitleInput.value || 'forge').replace(/[^a-z0-9]/gi, '-').toLowerCase();
             const fname = `${safeTitle}_${getTimestamp()}.json`;
-            const fid = localStorage.getItem('gem_drive_folder_id');
-            Drive.saveFile(data, fname, fid);
+            Drive.saveFile(data, fname, localStorage.getItem('gem_drive_folder_id'));
         });
 
         attach('load-drive-btn', 'click', async () => {
-            if(!Drive.isConnected()) { showToast("Veuillez vous connecter", "error"); return; }
+            if(!Drive.isConnected()) { showToast("Veuillez connecter votre compte", "error"); return; }
             const modal = document.getElementById('drive-modal');
             const list = document.getElementById('drive-file-list');
             modal.classList.remove('hidden');
-            list.innerHTML = '<p class="text-center text-gray-500">Chargement...</p>';
+            list.innerHTML = '<p class="text-center py-4">Chargement...</p>';
             const files = await Drive.listJsonFiles();
             list.innerHTML = '';
             files.forEach(f => {
                 const div = document.createElement('div');
-                div.className = "flex justify-between p-3 border-b hover:bg-gray-50 cursor-pointer items-center";
+                div.className = "flex justify-between p-3 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer items-center dark:text-gray-200";
                 div.innerHTML = `<span>${f.name}</span> <span class="text-xs text-gray-400">${new Date(f.modifiedTime).toLocaleDateString()}</span>`;
                 div.onclick = async () => {
                     const content = await Drive.loadFileContent(f.id);
@@ -216,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         attach('export-json-btn', 'click', () => {
             const blob = new Blob([JSON.stringify(getDataAsObject(), null, 2)], {type:'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `projet_${getTimestamp()}.json`; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `forge_${getTimestamp()}.json`; a.click();
         });
 
         attach('import-json-btn', 'click', () => document.getElementById('json-file-input').click());
@@ -244,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("Copié !", "success");
         });
 
-        // --- Helpers internes ---
+        // --- Helpers ---
         function getDataAsObject() {
             return {
                 mainTitle: mainTitleInput.value,
@@ -271,9 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         new Sortable(pillarsContainer, { animation: 150, handle: '.drag-handle-pillar', ghostClass: 'sortable-ghost' });
-        rebuildUi({mainTitle: "Gem sans titre", pillars: [{title:"Contexte", subsections:[{title:"Rôle", content:""}]}]});
+        rebuildUi({
+            mainTitle: "Nouveau Projet F.O.R.G.E.", 
+            pillars: [{title:"Contexte", subsections:[{title:"Rôle", content:""}]}]
+        });
 
-    } catch (err) {
-        console.error("FATAL ERROR in Main:", err);
-    }
+    } catch (err) { console.error("FATAL ERROR in Main:", err); }
 });
